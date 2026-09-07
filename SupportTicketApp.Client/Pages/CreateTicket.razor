@@ -1,0 +1,237 @@
+﻿@page "/tickets/create"
+@using SupportTicketApp.Client.Models
+@using SupportTicketApp.Client.Services
+@inject ITicketApiService TicketApiService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Ticket</PageTitle>
+
+<h1>Create Ticket</h1>
+
+@if (_isLoading)
+{
+    <p>Loading form...</p>
+}
+else if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Unable to load the form.</strong>
+        <div>@_loadErrorMessage</div>
+    </div>
+
+    <button class="btn btn-primary" @onclick="LoadLookupsAsync">
+        Try Again
+    </button>
+
+    <a class="btn btn-secondary ms-2" href="/tickets">
+        Back to Tickets
+    </a>
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(_saveErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>The ticket could not be created.</strong>
+            <div>@_saveErrorMessage</div>
+        </div>
+    }
+
+    <EditForm Model="_ticket"
+              OnValidSubmit="CreateTicketAsync"
+              FormName="create-ticket-form">
+
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label" for="ticket-title">
+                Title
+            </label>
+
+            <InputText id="ticket-title"
+                       class="form-control"
+                       @bind-Value="_ticket.Title" />
+
+            <ValidationMessage For="@(() => _ticket.Title)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="ticket-description">
+                Description
+            </label>
+
+            <InputTextArea id="ticket-description"
+                           class="form-control"
+                           rows="4"
+                           @bind-Value="_ticket.Description" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="ticket-priority">
+                Priority
+            </label>
+
+            <InputSelect id="ticket-priority"
+                         class="form-select"
+                         @bind-Value="_ticket.Priority">
+
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+            </InputSelect>
+
+            <ValidationMessage For="@(() => _ticket.Priority)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="ticket-customer">
+                Customer
+            </label>
+
+            <InputSelect id="ticket-customer"
+                         class="form-select"
+                         @bind-Value="_ticket.CustomerId">
+
+                <option value="0">Select a customer</option>
+
+                @foreach (LookupDto customer in _customers)
+                {
+                    <option value="@customer.Id">
+                        @customer.Name
+                    </option>
+                }
+            </InputSelect>
+
+            <ValidationMessage For="@(() => _ticket.CustomerId)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="ticket-status">
+                Status
+            </label>
+
+            <InputSelect id="ticket-status"
+                         class="form-select"
+                         @bind-Value="_ticket.TicketStatusId">
+
+                <option value="0">Select a status</option>
+
+                @foreach (LookupDto status in _statuses)
+                {
+                    <option value="@status.Id">
+                        @status.Name
+                    </option>
+                }
+            </InputSelect>
+
+            <ValidationMessage For="@(() => _ticket.TicketStatusId)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="ticket-technician">
+                Technician
+            </label>
+
+            <InputSelect id="ticket-technician"
+                         class="form-select"
+                         @bind-Value="_ticket.TechnicianId">
+
+                <option value="">Unassigned</option>
+
+                @foreach (LookupDto technician in _technicians)
+                {
+                    <option value="@technician.Id">
+                        @technician.Name
+                    </option>
+                }
+            </InputSelect>
+        </div>
+
+        <button class="btn btn-primary"
+                type="submit"
+                disabled="@_isSaving">
+            @(_isSaving ? "Creating..." : "Create Ticket")
+        </button>
+
+        <a class="btn btn-secondary ms-2" href="/tickets">
+            Cancel
+        </a>
+    </EditForm>
+}
+
+@code {
+    private readonly CreateTicketDto _ticket = new();
+
+    private List<LookupDto> _customers = new();
+    private List<LookupDto> _statuses = new();
+    private List<LookupDto> _technicians = new();
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    private string? _loadErrorMessage;
+    private string? _saveErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLookupsAsync();
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _loadErrorMessage = null;
+
+            Task<List<LookupDto>> customersTask =
+                TicketApiService.GetCustomersAsync();
+
+            Task<List<LookupDto>> statusesTask =
+                TicketApiService.GetStatusesAsync();
+
+            Task<List<LookupDto>> techniciansTask =
+                TicketApiService.GetTechniciansAsync();
+
+            await Task.WhenAll(
+                customersTask,
+                statusesTask,
+                techniciansTask);
+
+            _customers = await customersTask;
+            _statuses = await statusesTask;
+            _technicians = await techniciansTask;
+        }
+        catch (Exception exception)
+        {
+            _loadErrorMessage = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateTicketAsync()
+    {
+        try
+        {
+            _isSaving = true;
+            _saveErrorMessage = null;
+
+            await TicketApiService.CreateAsync(_ticket);
+
+            NavigationManager.NavigateTo("/tickets");
+        }
+        catch (Exception exception)
+        {
+            _saveErrorMessage = exception.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

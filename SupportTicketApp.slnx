@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SupportTicketApp.Api.Tests/SupportTicketApp.Api.Tests.csproj" Id="59994ff2-cafb-4ff4-baf6-52419dfb0237" />
+  <Project Path="SupportTicketApp.Api/SupportTicketApp.Api.csproj" />
+  <Project Path="SupportTicketApp.Client/SupportTicketApp.Client.csproj" Id="ac8409d7-3b04-43d0-afb8-5a8a83a940e8" />
+</Solution>

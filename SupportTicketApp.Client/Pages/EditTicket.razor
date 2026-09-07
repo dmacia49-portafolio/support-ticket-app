@@ -1,0 +1,208 @@
+﻿@page "/tickets/edit/{TicketId:int}"
+@using SupportTicketApp.Client.Models
+@using SupportTicketApp.Client.Services
+@inject ITicketApiService TicketApiService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Ticket</PageTitle>
+
+<h1>Edit Ticket @TicketId</h1>
+
+@if (_isLoading)
+{
+    <p>Loading ticket...</p>
+}
+else if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger">
+        @_errorMessage
+    </div>
+
+    <a class="btn btn-secondary" href="/tickets">
+        Back to Tickets
+    </a>
+}
+else
+{
+    <EditForm Model="_ticket"
+              OnValidSubmit="UpdateTicketAsync"
+              FormName="edit-ticket-form">
+
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control"
+                       @bind-Value="_ticket.Title" />
+            <ValidationMessage For="@(() => _ticket.Title)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <InputTextArea class="form-control"
+                           rows="4"
+                           @bind-Value="_ticket.Description" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Priority</label>
+            <InputSelect class="form-select"
+                         @bind-Value="_ticket.Priority">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Customer</label>
+            <InputSelect class="form-select"
+                         @bind-Value="_ticket.CustomerId">
+                @foreach (LookupDto customer in _customers)
+                {
+                    <option value="@customer.Id">
+                        @customer.Name
+                    </option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => _ticket.CustomerId)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <InputSelect class="form-select"
+                         @bind-Value="_ticket.TicketStatusId">
+                @foreach (LookupDto status in _statuses)
+                {
+                    <option value="@status.Id">
+                        @status.Name
+                    </option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => _ticket.TicketStatusId)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Technician</label>
+            <InputSelect class="form-select"
+                         @bind-Value="_ticket.TechnicianId">
+                <option value="">Unassigned</option>
+
+                @foreach (LookupDto technician in _technicians)
+                {
+                    <option value="@technician.Id">
+                        @technician.Name
+                    </option>
+                }
+            </InputSelect>
+        </div>
+
+        <button class="btn btn-primary"
+                type="submit"
+                disabled="@_isSaving">
+            @(_isSaving ? "Saving..." : "Save Changes")
+        </button>
+
+        <a class="btn btn-secondary ms-2" href="/tickets">
+            Cancel
+        </a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int TicketId { get; set; }
+
+    private readonly UpdateTicketDto _ticket = new();
+
+    private List<LookupDto> _customers = new();
+    private List<LookupDto> _statuses = new();
+    private List<LookupDto> _technicians = new();
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+
+            Task<TicketDto?> ticketTask =
+                TicketApiService.GetByIdAsync(TicketId);
+
+            Task<List<LookupDto>> customersTask =
+                TicketApiService.GetCustomersAsync();
+
+            Task<List<LookupDto>> statusesTask =
+                TicketApiService.GetStatusesAsync();
+
+            Task<List<LookupDto>> techniciansTask =
+                TicketApiService.GetTechniciansAsync();
+
+            await Task.WhenAll(
+                ticketTask,
+                customersTask,
+                statusesTask,
+                techniciansTask);
+
+            TicketDto? existingTicket = await ticketTask;
+
+            if (existingTicket is null)
+            {
+                _errorMessage =
+                    $"Ticket {TicketId} was not found.";
+
+                return;
+            }
+
+            _customers = await customersTask;
+            _statuses = await statusesTask;
+            _technicians = await techniciansTask;
+
+            _ticket.Title = existingTicket.Title;
+            _ticket.Description = existingTicket.Description;
+            _ticket.Priority = existingTicket.Priority;
+            _ticket.CustomerId = existingTicket.CustomerId;
+            _ticket.TicketStatusId =
+                existingTicket.TicketStatusId;
+            _ticket.TechnicianId =
+                existingTicket.TechnicianId;
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task UpdateTicketAsync()
+    {
+        try
+        {
+            _isSaving = true;
+            _errorMessage = null;
+
+            await TicketApiService.UpdateAsync(
+                TicketId,
+                _ticket);
+
+            NavigationManager.NavigateTo("/tickets");
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = exception.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

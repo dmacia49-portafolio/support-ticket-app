@@ -1,0 +1,63 @@
+@SupportTicketApp_Api_HostAddress = https://localhost:7230
+@baseUrl = https://localhost:7230
+
+### Get all tickets
+GET {{SupportTicketApp_Api_HostAddress}}/api/tickets
+Accept: application/json
+
+### Get ticket 1007
+GET {{SupportTicketApp_Api_HostAddress}}/api/tickets/1007
+Accept: application/json
+
+### Get a ticket that does not exist
+GET {{SupportTicketApp_Api_HostAddress}}/api/tickets/9999
+Accept: application/json
+
+### Create a ticket
+POST {{SupportTicketApp_Api_HostAddress}}/api/tickets
+Content-Type: application/json
+
+{
+  "ticketId": 1007,
+  "title": "Unable to access shared mailbox",
+  "description": "The user receives an access denied message.",
+  "priority": "High",
+  "customerId": 2,
+  "ticketStatusId": 1,
+  "technicianId": null
+}
+
+### Update ticket 1007
+PUT {{baseUrl}}/api/tickets/1007
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Shared mailbox access restored",
+  "description": "Permissions were updated and the user confirmed access.",
+  "priority": "Medium",
+  "customerId": 2,
+  "ticketStatusId": 3,
+  "technicianId": 1
+}
+
+### Delete ticket 1007
+DELETE {{baseUrl}}/api/tickets/1007
+Accept: application/json
+
+
+### Get customers
+GET {{baseUrl}}/api/lookups/customers
+Accept: application/json
+
+###
+
+### Get ticket statuses
+GET {{baseUrl}}/api/lookups/statuses
+Accept: application/json
+
+###
+
+### Get technicians
+GET {{baseUrl}}/api/lookups/technicians
+Accept: application/json
