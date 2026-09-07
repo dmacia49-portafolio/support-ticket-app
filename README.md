@@ -101,7 +101,7 @@ Example secret structure:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=DBapp1;User ID=YOUR_USER;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=<Server>;Database=<DB>;User ID=YOUR_USER;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=True;"
   }
 }
 ```
